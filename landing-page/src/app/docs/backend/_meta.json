@@ -1,0 +1,8 @@
+{
+	"index": "Overview",
+	"setup": "Setup & Configuration",
+	"graphql": "GraphQL Schema",
+	"authentication": "Authentication",
+	"database": "Database & Models",
+	"testing": "Testing"
+}

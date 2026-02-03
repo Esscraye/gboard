@@ -1,0 +1,11 @@
+{
+	"index": "Introduction",
+	"getting-started": "Getting Started",
+	"architecture": "Architecture",
+	"backend": "Backend",
+	"frontend": "Frontend",
+	"cli": "CLI",
+	"api": "API Reference",
+	"deployment": "Deployment",
+	"contributing": "Contributing"
+}

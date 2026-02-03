@@ -1,0 +1,16 @@
+# GBoard CLI Configuration
+
+# API Settings
+api:
+  url: "https://api.gboard.com/graphql"
+  token: ""
+  timeout: "30s"
+  retries: 3
+
+# Output Settings
+output:
+  format: "table"  # Options: table, json, yaml
+  color: true
+
+# Default project (optional)
+default_project: null

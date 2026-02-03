@@ -1,0 +1,435 @@
+# Contributing
+
+Thank you for your interest in contributing to GBoard! This guide will help you get started.
+
+## Code of Conduct
+
+By participating in this project, you agree to abide by our Code of Conduct. We expect all contributors to:
+
+- Be respectful and inclusive
+- Welcome newcomers
+- Accept constructive criticism
+- Focus on what's best for the community
+- Show empathy towards others
+
+## Getting Started
+
+### 1. Fork the Repository
+
+```bash
+# Fork on GitHub, then clone your fork
+git clone https://github.com/YOUR_USERNAME/gboard.git
+cd gboard
+```
+
+### 2. Set Up Development Environment
+
+```bash
+# Add upstream remote
+git remote add upstream https://github.com/your-repo/gboard.git
+
+# Start development environment
+docker-compose up -d
+
+# Or run manually (see Getting Started guide)
+```
+
+### 3. Create a Branch
+
+```bash
+# Update main branch
+git checkout main
+git pull upstream main
+
+# Create feature branch
+git checkout -b feature/amazing-feature
+
+# Or for bug fixes
+git checkout -b fix/bug-description
+```
+
+## Development Workflow
+
+### Making Changes
+
+1. **Write Code** - Implement your feature or fix
+2. **Write Tests** - Add tests for your changes
+3. **Run Tests** - Ensure all tests pass
+4. **Format Code** - Follow code style guidelines
+5. **Commit Changes** - Write clear commit messages
+
+### Code Style
+
+#### Backend (Go)
+
+```bash
+# Format code
+go fmt ./...
+
+# Run linter
+golangci-lint run
+
+# Run tests
+go test ./...
+```
+
+Follow [Effective Go](https://golang.org/doc/effective_go.html) guidelines.
+
+#### Frontend (TypeScript)
+
+```bash
+# Format and lint
+bun run lint
+
+# Fix auto-fixable issues
+bun run lint --fix
+
+# Run tests
+bun test
+```
+
+Use Biome for formatting and linting.
+
+### Commit Messages
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+type(scope): subject
+
+body
+
+footer
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `docs`: Documentation changes
+- `style`: Code style changes (formatting)
+- `refactor`: Code refactoring
+- `test`: Adding or updating tests
+- `chore`: Maintenance tasks
+
+**Examples:**
+
+```bash
+feat(backend): add issue priority field
+
+Added priority field to Issue model with enum values:
+LOW, MEDIUM, HIGH, URGENT
+
+Closes #123
+```
+
+```bash
+fix(frontend): resolve drag-and-drop bug
+
+Fixed issue where dropped items would disappear
+when dragged to the last column.
+
+Fixes #456
+```
+
+### Testing
+
+#### Backend Tests
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with coverage
+go test -cover ./...
+
+# Run specific test
+go test -run TestCreateProject ./internal/services
+
+# Integration tests
+go test ./tests/integration/...
+```
+
+#### Frontend Tests
+
+```bash
+# Unit tests
+bun test
+
+# E2E tests
+bun playwright test
+
+# Run specific test
+bun playwright test board.spec.ts
+
+# UI mode
+bun playwright test --ui
+```
+
+## Pull Request Process
+
+### 1. Update Your Branch
+
+```bash
+# Fetch latest changes
+git fetch upstream
+
+# Rebase on main
+git rebase upstream/main
+
+# Resolve conflicts if any
+# git add .
+# git rebase --continue
+```
+
+### 2. Push Changes
+
+```bash
+git push origin feature/amazing-feature
+```
+
+### 3. Create Pull Request
+
+1. Go to GitHub
+2. Click "New Pull Request"
+3. Select your branch
+4. Fill out PR template:
+
+```markdown
+## Description
+Brief description of changes
+
+## Type of Change
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Breaking change
+- [ ] Documentation update
+
+## Testing
+How did you test your changes?
+
+## Screenshots (if applicable)
+Add screenshots for UI changes
+
+## Checklist
+- [ ] Tests pass locally
+- [ ] Code follows style guidelines
+- [ ] Documentation updated
+- [ ] No new warnings
+```
+
+### 4. Review Process
+
+- Maintainers will review your PR
+- Address feedback and update your PR
+- Once approved, it will be merged!
+
+## Areas for Contribution
+
+### Good First Issues
+
+Look for issues labeled `good first issue` - these are great for beginners!
+
+### High Priority
+
+- 🐛 **Bug Fixes** - Fix reported bugs
+- 📝 **Documentation** - Improve docs
+- ✨ **Features** - Implement new features
+- 🎨 **UI/UX** - Enhance user interface
+- ⚡ **Performance** - Optimize performance
+- 🧪 **Tests** - Add more test coverage
+
+### Feature Requests
+
+Before implementing a major feature:
+
+1. Check existing issues and PRs
+2. Create an issue to discuss the feature
+3. Wait for maintainer approval
+4. Implement and submit PR
+
+## Project Structure
+
+### Backend
+
+```
+backend/
+├── cmd/           # Entry point
+├── graph/         # GraphQL layer
+├── internal/      # Internal packages
+│   ├── models/    # Domain models
+│   ├── repositories/  # Data layer
+│   └── services/  # Business logic
+├── pkg/           # Public packages
+└── tests/         # Tests
+```
+
+### Frontend
+
+```
+frontend/
+├── app/           # Next.js App Router
+├── components/    # React components
+├── lib/           # Utilities
+└── tests/         # Tests
+```
+
+## Development Tips
+
+### Backend
+
+#### Adding a New Model
+
+1. Define model in `internal/models/`
+2. Add GraphQL type in `graph/schema.graphqls`
+3. Run `go run github.com/99designs/gqlgen generate`
+4. Create repository in `internal/repositories/`
+5. Create service in `internal/services/`
+6. Implement resolvers in `graph/schema.resolvers.go`
+7. Add tests
+
+#### Adding a New Endpoint
+
+```go
+// 1. Add to schema.graphqls
+type Query {
+  getStats: Stats!
+}
+
+// 2. Generate code
+go run github.com/99designs/gqlgen generate
+
+// 3. Implement resolver
+func (r *queryResolver) GetStats(ctx context.Context) (*model.Stats, error) {
+    return r.StatsService.GetStats()
+}
+```
+
+### Frontend
+
+#### Adding a New Component
+
+```tsx
+// 1. Create component
+// components/stats/StatsCard.tsx
+
+interface StatsCardProps {
+  title: string
+  value: number
+}
+
+export function StatsCard({ title, value }: StatsCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-4xl font-bold">{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+// 2. Add tests
+// components/stats/__tests__/StatsCard.test.tsx
+
+// 3. Use in pages
+import { StatsCard } from '@/components/stats/StatsCard'
+```
+
+#### Adding a GraphQL Query
+
+```tsx
+// 1. Define query
+// lib/graphql/queries/stats.ts
+
+import { gql } from '@apollo/client'
+
+export const GET_STATS = gql`
+  query GetStats {
+    stats {
+      projectCount
+      issueCount
+      userCount
+    }
+  }
+`
+
+// 2. Use in component
+import { useQuery } from '@apollo/client'
+import { GET_STATS } from '@/lib/graphql/queries/stats'
+
+export function StatsPanel() {
+  const { data, loading } = useQuery(GET_STATS)
+  // ...
+}
+```
+
+## Documentation
+
+### Updating Docs
+
+Documentation is in `landing-page/src/app/docs/`:
+
+```bash
+# Add new page
+landing-page/src/app/docs/new-topic.mdx
+
+# Update navigation
+landing-page/src/app/docs/_meta.json
+```
+
+### Writing Good Docs
+
+- **Clear titles** - Descriptive and searchable
+- **Code examples** - Include working examples
+- **Step-by-step** - Break down complex tasks
+- **Screenshots** - Visual aids for UI features
+- **Links** - Reference related docs
+
+## Community
+
+### Communication
+
+- **GitHub Issues** - Bug reports and feature requests
+- **GitHub Discussions** - Questions and ideas
+- **Pull Requests** - Code contributions
+
+### Getting Help
+
+Stuck? We're here to help!
+
+1. Check the documentation
+2. Search existing issues
+3. Ask in GitHub Discussions
+4. Create a new issue
+
+### Recognition
+
+Contributors are recognized:
+
+- **README** - Listed in contributors section
+- **Changelog** - Mentioned in release notes
+- **Profile** - GitHub contribution graph
+
+## Release Process
+
+Maintainers follow semantic versioning:
+
+- **Major** (1.0.0) - Breaking changes
+- **Minor** (0.1.0) - New features
+- **Patch** (0.0.1) - Bug fixes
+
+## License
+
+By contributing, you agree that your contributions will be licensed under the same license as the project (MIT License).
+
+## Questions?
+
+Don't hesitate to ask! We're happy to help:
+
+- Create an issue with the `question` label
+- Start a discussion on GitHub
+- Reach out to maintainers
+
+Thank you for contributing to GBoard! 🚀

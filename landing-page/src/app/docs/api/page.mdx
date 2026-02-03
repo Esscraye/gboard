@@ -1,0 +1,777 @@
+# API Reference
+
+GBoard provides a comprehensive GraphQL API for all platform operations.
+
+## GraphQL Endpoint
+
+```
+POST http://localhost:8080/query
+```
+
+### Headers
+
+```http
+Content-Type: application/json
+Authorization: Bearer <your-jwt-token>
+```
+
+## Authentication
+
+### Signup
+
+Create a new user account.
+
+```graphql
+mutation Signup {
+  signup(input: {
+    email: "user@example.com"
+    password: "securePassword123"
+    name: "John Doe"
+  }) {
+    token
+    user {
+      id
+      email
+      name
+    }
+  }
+}
+```
+
+### Login
+
+Authenticate and receive a JWT token.
+
+```graphql
+mutation Login {
+  login(input: {
+    email: "user@example.com"
+    password: "securePassword123"
+  }) {
+    token
+    user {
+      id
+      email
+      name
+    }
+  }
+}
+```
+
+### Refresh Token
+
+Refresh an expired token.
+
+```graphql
+mutation RefreshToken {
+  refreshToken(token: "your-refresh-token") {
+    token
+    user {
+      id
+      email
+    }
+  }
+}
+```
+
+## Users
+
+### Get Current User
+
+```graphql
+query Me {
+  me {
+    id
+    email
+    name
+    createdAt
+    projects {
+      id
+      name
+      role
+    }
+  }
+}
+```
+
+### Get User by ID
+
+```graphql
+query GetUser($id: ID!) {
+  user(id: $id) {
+    id
+    email
+    name
+    createdAt
+  }
+}
+```
+
+## Projects
+
+### List Projects
+
+Get all projects for the current user.
+
+```graphql
+query GetProjects {
+  projects {
+    id
+    name
+    description
+    key
+    owner {
+      id
+      name
+      email
+    }
+    members {
+      user {
+        id
+        name
+        email
+      }
+      role
+    }
+    boards {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Get Project
+
+Fetch a single project by ID.
+
+```graphql
+query GetProject($id: ID!) {
+  project(id: $id) {
+    id
+    name
+    description
+    key
+    owner {
+      id
+      name
+      email
+    }
+    members {
+      user {
+        id
+        name
+        email
+      }
+      role
+    }
+    boards {
+      id
+      name
+      columns {
+        id
+        name
+        position
+      }
+    }
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Create Project
+
+```graphql
+mutation CreateProject {
+  createProject(input: {
+    name: "My New Project"
+    description: "A project for managing tasks"
+    key: "MNP"
+  }) {
+    id
+    name
+    description
+    key
+    owner {
+      id
+      name
+    }
+    createdAt
+  }
+}
+```
+
+### Update Project
+
+```graphql
+mutation UpdateProject($id: ID!) {
+  updateProject(
+    id: $id
+    input: {
+      name: "Updated Project Name"
+      description: "Updated description"
+    }
+  ) {
+    id
+    name
+    description
+    updatedAt
+  }
+}
+```
+
+### Delete Project
+
+```graphql
+mutation DeleteProject($id: ID!) {
+  deleteProject(id: $id)
+}
+```
+
+### Add Project Member
+
+```graphql
+mutation AddProjectMember($projectId: ID!, $userId: ID!) {
+  addProjectMember(
+    projectId: $projectId
+    userId: $userId
+    role: MEMBER
+  ) {
+    user {
+      id
+      name
+      email
+    }
+    role
+  }
+}
+```
+
+## Boards
+
+### Create Board
+
+```graphql
+mutation CreateBoard($projectId: ID!) {
+  createBoard(input: {
+    projectId: $projectId
+    name: "Sprint 1"
+  }) {
+    id
+    name
+    project {
+      id
+      name
+    }
+    columns {
+      id
+      name
+      position
+    }
+    createdAt
+  }
+}
+```
+
+### Get Board
+
+```graphql
+query GetBoard($id: ID!) {
+  board(id: $id) {
+    id
+    name
+    project {
+      id
+      name
+    }
+    columns {
+      id
+      name
+      position
+      issues {
+        id
+        title
+        priority
+        status
+        assignee {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+```
+
+## Columns
+
+### Create Column
+
+```graphql
+mutation CreateColumn($boardId: ID!) {
+  createColumn(input: {
+    boardId: $boardId
+    name: "To Do"
+    position: 0
+  }) {
+    id
+    name
+    position
+    board {
+      id
+      name
+    }
+  }
+}
+```
+
+### Update Column
+
+```graphql
+mutation UpdateColumn($id: ID!) {
+  updateColumn(
+    id: $id
+    input: {
+      name: "In Progress"
+      position: 1
+    }
+  ) {
+    id
+    name
+    position
+  }
+}
+```
+
+### Delete Column
+
+```graphql
+mutation DeleteColumn($id: ID!) {
+  deleteColumn(id: $id)
+}
+```
+
+## Issues
+
+### List Issues
+
+Get all issues for a project.
+
+```graphql
+query GetIssues($projectId: ID!) {
+  issues(projectId: $projectId) {
+    id
+    title
+    description
+    status
+    priority
+    column {
+      id
+      name
+    }
+    assignee {
+      id
+      name
+      email
+    }
+    creator {
+      id
+      name
+    }
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Get Issue
+
+```graphql
+query GetIssue($id: ID!) {
+  issue(id: $id) {
+    id
+    title
+    description
+    status
+    priority
+    column {
+      id
+      name
+    }
+    project {
+      id
+      name
+    }
+    assignee {
+      id
+      name
+      email
+    }
+    creator {
+      id
+      name
+    }
+    comments {
+      id
+      content
+      author {
+        id
+        name
+      }
+      createdAt
+    }
+    createdAt
+    updatedAt
+  }
+}
+```
+
+### Create Issue
+
+```graphql
+mutation CreateIssue($projectId: ID!, $columnId: ID!) {
+  createIssue(input: {
+    projectId: $projectId
+    columnId: $columnId
+    title: "Fix login bug"
+    description: "Users cannot login with email"
+    priority: HIGH
+    assigneeId: "user-id-here"
+  }) {
+    id
+    title
+    description
+    priority
+    status
+    column {
+      id
+      name
+    }
+    assignee {
+      id
+      name
+    }
+    createdAt
+  }
+}
+```
+
+### Update Issue
+
+```graphql
+mutation UpdateIssue($id: ID!) {
+  updateIssue(
+    id: $id
+    input: {
+      title: "Updated title"
+      description: "Updated description"
+      priority: MEDIUM
+      status: IN_PROGRESS
+    }
+  ) {
+    id
+    title
+    description
+    priority
+    status
+    updatedAt
+  }
+}
+```
+
+### Move Issue
+
+Move an issue to a different column.
+
+```graphql
+mutation MoveIssue($id: ID!, $columnId: ID!, $position: Int!) {
+  moveIssue(
+    id: $id
+    columnId: $columnId
+    position: $position
+  ) {
+    id
+    column {
+      id
+      name
+    }
+    position
+  }
+}
+```
+
+### Assign Issue
+
+```graphql
+mutation AssignIssue($id: ID!, $userId: ID!) {
+  assignIssue(
+    id: $id
+    userId: $userId
+  ) {
+    id
+    assignee {
+      id
+      name
+      email
+    }
+  }
+}
+```
+
+### Delete Issue
+
+```graphql
+mutation DeleteIssue($id: ID!) {
+  deleteIssue(id: $id)
+}
+```
+
+## Types
+
+### User
+
+```graphql
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  createdAt: String!
+  updatedAt: String!
+}
+```
+
+### Project
+
+```graphql
+type Project {
+  id: ID!
+  name: String!
+  description: String
+  key: String!
+  owner: User!
+  members: [ProjectMember!]!
+  boards: [Board!]!
+  createdAt: String!
+  updatedAt: String!
+}
+```
+
+### ProjectMember
+
+```graphql
+type ProjectMember {
+  user: User!
+  role: ProjectRole!
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+```
+
+### Board
+
+```graphql
+type Board {
+  id: ID!
+  name: String!
+  project: Project!
+  columns: [Column!]!
+  createdAt: String!
+  updatedAt: String!
+}
+```
+
+### Column
+
+```graphql
+type Column {
+  id: ID!
+  name: String!
+  board: Board!
+  position: Int!
+  issues: [Issue!]!
+  createdAt: String!
+  updatedAt: String!
+}
+```
+
+### Issue
+
+```graphql
+type Issue {
+  id: ID!
+  title: String!
+  description: String
+  status: IssueStatus!
+  priority: IssuePriority!
+  project: Project!
+  column: Column!
+  assignee: User
+  creator: User!
+  comments: [Comment!]!
+  position: Int!
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum IssueStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum IssuePriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+```
+
+## Error Handling
+
+### Error Response Format
+
+```json
+{
+  "errors": [
+    {
+      "message": "Project not found",
+      "path": ["project"],
+      "extensions": {
+        "code": "NOT_FOUND"
+      }
+    }
+  ]
+}
+```
+
+### Common Error Codes
+
+- `UNAUTHENTICATED` - Missing or invalid authentication token
+- `FORBIDDEN` - User doesn't have permission
+- `NOT_FOUND` - Resource not found
+- `VALIDATION_ERROR` - Input validation failed
+- `INTERNAL_ERROR` - Server error
+
+### Example Error Handling (JavaScript)
+
+```javascript
+import { ApolloClient } from '@apollo/client'
+
+try {
+  const { data } = await client.mutate({
+    mutation: CREATE_PROJECT,
+    variables: { input }
+  })
+} catch (error) {
+  if (error.graphQLErrors) {
+    error.graphQLErrors.forEach(err => {
+      switch (err.extensions.code) {
+        case 'UNAUTHENTICATED':
+          // Redirect to login
+          break
+        case 'VALIDATION_ERROR':
+          // Show validation errors
+          break
+        default:
+          // Show general error
+      }
+    })
+  }
+}
+```
+
+## Rate Limiting
+
+Currently, there's no rate limiting, but it's recommended to:
+- Batch queries when possible
+- Use pagination for large datasets
+- Cache responses client-side
+
+## Pagination (Future)
+
+Planned pagination support:
+
+```graphql
+query GetIssues($first: Int!, $after: String) {
+  issues(first: $first, after: $after) {
+    edges {
+      node {
+        id
+        title
+      }
+      cursor
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}
+```
+
+## Subscriptions (Future)
+
+Real-time updates via WebSocket subscriptions:
+
+```graphql
+subscription OnIssueUpdate($projectId: ID!) {
+  issueUpdated(projectId: $projectId) {
+    id
+    title
+    column {
+      id
+      name
+    }
+    assignee {
+      id
+      name
+    }
+  }
+}
+```
+
+## Testing
+
+### GraphQL Playground
+
+Access the interactive playground at `http://localhost:8080/` (dev mode only).
+
+### cURL Example
+
+```bash
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{
+    "query": "query { projects { id name } }"
+  }'
+```
+
+### Postman Collection
+
+Import the Postman collection from `/docs/postman/gboard-collection.json`.
+
+## Best Practices
+
+1. **Always specify fields** - Don't use generic fragments
+2. **Use variables** - Never concatenate strings into queries
+3. **Handle errors** - Check both data and errors in responses
+4. **Batch requests** - Combine multiple queries
+5. **Cache responses** - Use Apollo Client cache
+6. **Set timeouts** - Configure reasonable request timeouts
+
+## Next Steps
+
+- [Backend Guide](/docs/backend) - Learn about the backend implementation
+- [Frontend Guide](/docs/frontend) - Integrate the API in your frontend
+- [CLI](/docs/cli) - Use the command-line interface

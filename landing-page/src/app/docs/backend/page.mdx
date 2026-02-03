@@ -1,0 +1,279 @@
+# Backend Overview
+
+The GBoard backend is a high-performance Go application that provides a GraphQL API for the entire platform.
+
+## Tech Stack
+
+- **Language**: Go 1.21+
+- **GraphQL**: gqlgen
+- **HTTP Framework**: Gin
+- **ORM**: GORM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Database**: PostgreSQL or SQLite
+
+## Project Structure
+
+```
+backend/
+├── cmd/
+│   └── main.go              # Application entry point
+├── config/
+│   ├── database.go          # Database configuration
+│   └── test_helpers.go      # Test utilities
+├── graph/
+│   ├── generated.go         # gqlgen generated code
+│   ├── model/              # GraphQL models
+│   ├── resolver.go          # Root resolver
+│   ├── schema.graphqls      # GraphQL schema
+│   └── schema.resolvers.go  # Resolver implementations
+├── internal/
+│   ├── models/              # Domain models
+│   ├── repositories/        # Data access layer
+│   └── services/            # Business logic
+├── pkg/
+│   ├── auth/                # Authentication middleware
+│   │   ├── jwt.go
+│   │   └── middleware.go
+│   └── database/            # Database connection
+│       └── database.go
+├── tests/
+│   ├── integration/         # Integration tests
+│   └── unit/                # Unit tests
+├── .env.example             # Environment variables template
+├── go.mod                   # Go dependencies
+├── go.sum                   # Dependency checksums
+├── gqlgen.yml              # gqlgen configuration
+└── run_tests.sh            # Test runner script
+```
+
+## Core Concepts
+
+### Resolvers
+
+Resolvers are the bridge between GraphQL queries/mutations and your business logic:
+
+```go
+// graph/schema.resolvers.go
+func (r *queryResolver) Projects(ctx context.Context) ([]*model.Project, error) {
+    userID := auth.GetUserIDFromContext(ctx)
+    return r.ProjectService.GetUserProjects(userID)
+}
+
+func (r *mutationResolver) CreateProject(ctx context.Context, 
+    input model.CreateProjectInput) (*model.Project, error) {
+    userID := auth.GetUserIDFromContext(ctx)
+    return r.ProjectService.CreateProject(userID, input)
+}
+```
+
+### Services
+
+Services contain business logic and orchestrate between repositories:
+
+```go
+// internal/services/project_service.go
+type ProjectService struct {
+    repo *repositories.ProjectRepository
+}
+
+func (s *ProjectService) CreateProject(userID string, 
+    input model.CreateProjectInput) (*model.Project, error) {
+    // Validate input
+    if input.Name == "" {
+        return nil, errors.New("project name is required")
+    }
+    
+    // Create project
+    project := &models.Project{
+        Name:        input.Name,
+        Description: input.Description,
+        OwnerID:     userID,
+    }
+    
+    return s.repo.Create(project)
+}
+```
+
+### Repositories
+
+Repositories handle data persistence:
+
+```go
+// internal/repositories/project_repository.go
+type ProjectRepository struct {
+    db *gorm.DB
+}
+
+func (r *ProjectRepository) Create(project *models.Project) (*model.Project, error) {
+    if err := r.db.Create(project).Error; err != nil {
+        return nil, err
+    }
+    return project.ToGraphQL(), nil
+}
+
+func (r *ProjectRepository) FindByID(id string) (*model.Project, error) {
+    var project models.Project
+    if err := r.db.Preload("Owner").First(&project, "id = ?", id).Error; err != nil {
+        return nil, err
+    }
+    return project.ToGraphQL(), nil
+}
+```
+
+## Running the Backend
+
+### Development Mode
+
+```bash
+# Install dependencies
+go mod download
+
+# Run the server (with hot reload if using air)
+go run cmd/main.go
+
+# Or with air for hot reload
+air
+```
+
+The server will start on `http://localhost:8080` with:
+- GraphQL endpoint: `/query`
+- GraphQL Playground: `/` (dev only)
+- Health check: `/health`
+
+### Production Mode
+
+```bash
+# Build the binary
+go build -o gboard-server cmd/main.go
+
+# Run the binary
+./gboard-server
+```
+
+## Environment Variables
+
+```env
+# Server Configuration
+PORT=8080
+GIN_MODE=release  # or debug
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/gboard
+
+# JWT Authentication
+JWT_SECRET=your-super-secret-key-change-this-in-production
+JWT_EXPIRATION=24h
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+```
+
+## Database Migrations
+
+The backend uses GORM's AutoMigrate feature:
+
+```go
+// cmd/main.go
+func main() {
+    db := database.InitDB()
+    
+    // Auto-migrate all models
+    db.AutoMigrate(
+        &models.User{},
+        &models.Project{},
+        &models.Board{},
+        &models.Column{},
+        &models.Issue{},
+        &models.ProjectMember{},
+    )
+    
+    // Start server...
+}
+```
+
+## GraphQL Playground
+
+In development mode, access the interactive GraphQL playground at `http://localhost:8080/`.
+
+Example query:
+
+```graphql
+query {
+  projects {
+    id
+    name
+    description
+    owner {
+      id
+      name
+      email
+    }
+    members {
+      user {
+        id
+        name
+      }
+      role
+    }
+  }
+}
+```
+
+## Code Generation
+
+The backend uses gqlgen to generate GraphQL server code:
+
+```bash
+# Generate GraphQL code
+go run github.com/99designs/gqlgen generate
+
+# This generates:
+# - graph/generated.go
+# - graph/model/models_gen.go
+```
+
+**Important**: Never edit generated files directly. Modify `graph/schema.graphqls` and regenerate.
+
+## Error Handling
+
+```go
+// Use standard Go errors
+if project == nil {
+    return nil, errors.New("project not found")
+}
+
+// Or custom errors
+type NotFoundError struct {
+    Resource string
+    ID       string
+}
+
+func (e *NotFoundError) Error() string {
+    return fmt.Sprintf("%s with ID %s not found", e.Resource, e.ID)
+}
+```
+
+## Logging
+
+```go
+import "log"
+
+log.Printf("User %s created project %s", userID, project.ID)
+log.Printf("ERROR: Failed to create project: %v", err)
+```
+
+## Performance Tips
+
+1. **Use DataLoader** - Prevent N+1 queries
+2. **Database Indexes** - Index foreign keys and frequently queried fields
+3. **Connection Pooling** - Configure GORM connection pool
+4. **Goroutines** - Use for concurrent operations
+5. **Caching** - Cache frequently accessed data
+
+## Next Steps
+
+- [Setup & Configuration](/docs/backend/setup) - Detailed setup guide
+- [GraphQL Schema](/docs/backend/graphql) - Complete schema reference
+- [Authentication](/docs/backend/authentication) - Auth implementation
+- [Database & Models](/docs/backend/database) - Data layer details
+- [Testing](/docs/backend/testing) - Testing strategies

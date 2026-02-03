@@ -1,0 +1,280 @@
+# GraphQL schema for GBoard - Jira-like project management
+
+type Project {
+  id: ID!
+  name: String!
+  description: String
+  key: String!
+  createdAt: String!
+  updatedAt: String!
+  owner: User!
+  members: [User!]!
+  teams: [Team!]!
+  boards: [Board!]!
+}
+
+type Team {
+  id: ID!
+  name: String!
+  description: String
+  members: [User!]!
+  projects: [Project!]!
+  defaultBoard: Board
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Board {
+  id: ID!
+  name: String!
+  project: Project
+  team: Team
+  columns: [Column!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type Column {
+  id: ID!
+  name: String!
+  position: Int!
+  board: Board!
+  issues: [Issue!]!
+}
+
+type Issue {
+  id: ID!
+  key: String!
+  title: String!
+  description: String
+  status: IssueStatus!
+  priority: IssuePriority!
+  issueType: IssueType!
+  reporter: User
+  assignee: User
+  createdAt: String!
+  updatedAt: String!
+  column: Column
+  project: Project!
+  comments: [Comment!]!
+  attachments: [Attachment!]!
+}
+
+type Comment {
+  id: ID!
+  content: String!
+  author: User!
+  createdAt: String!
+  issue: Issue!
+}
+
+type Attachment {
+  id: ID!
+  url: String!
+  name: String!
+  size: Int!
+  mimeType: String!
+  createdAt: String!
+  issue: Issue!
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  username: String!
+  avatarUrl: String
+  createdAt: String!
+  updatedAt: String!
+  teams: [Team!]!
+}
+
+enum IssueStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+  REVIEW
+}
+
+enum IssuePriority {
+  LOWEST
+  LOW
+  MEDIUM
+  HIGH
+  HIGHEST
+}
+
+enum IssueType {
+  TASK
+  STORY
+  BUG
+  EPIC
+  SUBTASK
+}
+
+type Query {
+  # Project queries
+  projects: [Project!]!
+  project(id: ID!): Project
+  
+  # Board queries
+  boards(projectId: ID!): [Board!]!
+  board(id: ID!): Board
+  
+  # Issue queries
+  issues(projectId: ID!, boardId: ID): [Issue!]!
+  issue(id: ID!): Issue
+  
+  # User queries
+  users: [User!]!
+  user(id: ID!): User
+  me: User!
+  
+  # Team queries
+  teams: [Team!]!
+  team(id: ID!): Team
+}
+
+type Mutation {
+  # Project mutations
+  createProject(input: CreateProjectInput!): Project!
+  updateProject(id: ID!, input: UpdateProjectInput!): Project!
+  deleteProject(id: ID!): Boolean!
+  addTeamToProject(projectId: ID!, teamId: ID!): Project!
+  
+  # Board mutations
+  createBoard(input: CreateBoardInput!): Board!
+  updateBoard(id: ID!, input: UpdateBoardInput!): Board!
+  deleteBoard(id: ID!): Boolean!
+  
+  # Column mutations
+  createColumn(input: CreateColumnInput!): Column!
+  updateColumn(id: ID!, input: UpdateColumnInput!): Column!
+  deleteColumn(id: ID!): Boolean!
+  moveColumn(id: ID!, newPosition: Int!): Column!
+  
+  # Issue mutations
+  createIssue(input: CreateIssueInput!): Issue!
+  updateIssue(id: ID!, input: UpdateIssueInput!): Issue!
+  deleteIssue(id: ID!): Boolean!
+  moveIssue(id: ID!, columnId: ID!): Issue!
+  
+  # Comment mutations
+  addComment(input: AddCommentInput!): Comment!
+  updateComment(id: ID!, content: String!): Comment!
+  deleteComment(id: ID!): Boolean!
+  
+  # User mutations
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deleteUser(id: ID!): Boolean!
+  
+  # Team mutations
+  createTeam(input: CreateTeamInput!): Team!
+  updateTeam(id: ID!, input: UpdateTeamInput!): Team!
+  deleteTeam(id: ID!): Boolean!
+  addUserToTeam(teamId: ID!, userId: ID!): Team!
+  removeUserFromTeam(teamId: ID!, userId: ID!): Team!
+  
+  # Authentication
+  login(email: String!, password: String!): AuthPayload!
+  signup(input: SignupInput!): AuthPayload!
+  refreshToken(token: String!): AuthPayload!
+}
+
+input CreateProjectInput {
+  name: String!
+  description: String
+  key: String!
+}
+
+input UpdateProjectInput {
+  name: String
+  description: String
+  key: String
+}
+
+input CreateBoardInput {
+  name: String!
+  projectId: ID
+  teamId: ID
+}
+
+input CreateTeamInput {
+  name: String!
+  description: String
+}
+
+input UpdateTeamInput {
+  name: String
+  description: String
+}
+
+input UpdateBoardInput {
+  name: String
+}
+
+input CreateColumnInput {
+  name: String!
+  boardId: ID!
+  position: Int!
+}
+
+input UpdateColumnInput {
+  name: String
+  position: Int
+}
+
+input CreateIssueInput {
+  title: String!
+  description: String
+  projectId: ID!
+  boardId: ID
+  columnId: ID
+  status: IssueStatus
+  priority: IssuePriority
+  issueType: IssueType
+  assigneeId: ID
+}
+
+input UpdateIssueInput {
+  title: String
+  description: String
+  status: IssueStatus
+  priority: IssuePriority
+  issueType: IssueType
+  assigneeId: ID
+}
+
+input AddCommentInput {
+  issueId: ID!
+  content: String!
+}
+
+input CreateUserInput {
+  email: String!
+  name: String!
+  username: String!
+  password: String!
+}
+
+input UpdateUserInput {
+  email: String
+  name: String
+  username: String
+  password: String
+}
+
+input SignupInput {
+  email: String!
+  name: String!
+  username: String!
+  password: String!
+}
+
+type AuthPayload {
+  token: String!
+  refreshToken: String!
+  user: User!
+}

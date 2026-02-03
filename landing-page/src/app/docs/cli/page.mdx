@@ -1,0 +1,535 @@
+# CLI Reference
+
+The GBoard CLI is a powerful command-line interface for managing your projects, boards, and issues directly from your terminal.
+
+## Installation
+
+### Binary Download
+
+Download the latest release for your platform:
+
+```bash
+# macOS / Linux
+curl -L https://github.com/your-repo/gboard/releases/latest/download/gboard-$(uname-s)-$(uname -m) -o gboard
+chmod +x gboard
+sudo mv gboard /usr/local/bin/
+
+# Verify installation
+gboard version
+```
+
+### From Source
+
+```bash
+# Clone repository
+git clone https://github.com/your-repo/gboard.git
+cd gboard/cli
+
+# Build
+go build -o gboard
+
+# Install
+sudo mv gboard /usr/local/bin/
+```
+
+## Configuration
+
+### Initialize Configuration
+
+```bash
+# Create config file
+gboard config init
+
+# This creates ~/.gboard/config.yml
+```
+
+### Configuration File
+
+```yaml
+# ~/.gboard/config.yml
+api:
+  url: http://localhost:8080/graphql
+  token: your-jwt-token-here
+
+output:
+  format: table  # table, json, yaml
+  color: true
+
+defaults:
+  project_id: ""  # Set default project
+```
+
+### Set API Token
+
+```bash
+# Login to get token
+gboard auth login
+
+# Or set manually
+gboard config set api.token "your-token-here"
+```
+
+## Commands Reference
+
+### Authentication
+
+#### Login
+
+```bash
+gboard auth login
+# Prompts for email and password
+# Stores JWT token in config
+
+# Or provide credentials
+gboard auth login --email user@example.com --password pass123
+```
+
+#### Logout
+
+```bash
+gboard auth logout
+# Removes token from config
+```
+
+#### Current User
+
+```bash
+gboard auth whoami
+# Displays current user information
+```
+
+### Projects
+
+#### List Projects
+
+```bash
+# List all projects
+gboard project list
+
+# Short form
+gboard project ls
+
+# Output formats
+gboard project list --output json
+gboard project list --output yaml
+gboard project list --output table
+```
+
+#### Create Project
+
+```bash
+# Interactive mode
+gboard project create
+
+# With flags
+gboard project create \
+  --name "My Project" \
+  --description "Project description" \
+  --key "MYPROJ"
+```
+
+#### Show Project Details
+
+```bash
+# By ID
+gboard project show <project-id>
+
+# By key
+gboard project show --key MYPROJ
+
+# With members and boards
+gboard project show <project-id> --detailed
+```
+
+#### Update Project
+
+```bash
+gboard project update <project-id> \
+  --name "New Name" \
+  --description "New description"
+```
+
+#### Delete Project
+
+```bash
+gboard project delete <project-id>
+
+# Skip confirmation
+gboard project delete <project-id> --force
+```
+
+### Boards
+
+#### List Boards
+
+```bash
+# List boards in a project
+gboard board list --project <project-id>
+
+# Use default project from config
+gboard board list
+```
+
+#### Create Board
+
+```bash
+gboard board create \
+  --project <project-id> \
+  --name "Sprint 1"
+```
+
+### Columns
+
+#### List Columns
+
+```bash
+gboard column list --board <board-id>
+```
+
+#### Create Column
+
+```bash
+gboard column create \
+  --board <board-id> \
+  --name "To Do" \
+  --position 0
+```
+
+#### Reorder Columns
+
+```bash
+gboard column move <column-id> --position 2
+```
+
+### Issues
+
+#### List Issues
+
+```bash
+# List all issues in project
+gboard issue list --project <project-id>
+
+# Filter by column
+gboard issue list --column <column-id>
+
+# Filter by assignee
+gboard issue list --assignee <user-id>
+
+# Filter by status
+gboard issue list --status "In Progress"
+```
+
+#### Create Issue
+
+```bash
+# Interactive mode
+gboard issue create
+
+# With flags
+gboard issue create \
+  --project <project-id> \
+  --title "Fix login bug" \
+  --description "Users can't login" \
+  --priority high \
+  --column <column-id>
+```
+
+#### Show Issue
+
+```bash
+gboard issue show <issue-id>
+
+# With comments
+gboard issue show <issue-id> --with-comments
+```
+
+#### Update Issue
+
+```bash
+gboard issue update <issue-id> \
+  --title "New title" \
+  --description "New description" \
+  --priority medium \
+  --assignee <user-id>
+```
+
+#### Move Issue
+
+```bash
+# Move to different column
+gboard issue move <issue-id> --column <column-id>
+
+# Move to position
+gboard issue move <issue-id> --column <column-id> --position 2
+```
+
+#### Assign Issue
+
+```bash
+gboard issue assign <issue-id> --user <user-id>
+
+# Assign to self
+gboard issue assign <issue-id> --me
+```
+
+#### Delete Issue
+
+```bash
+gboard issue delete <issue-id>
+
+# Force delete without confirmation
+gboard issue delete <issue-id> --force
+```
+
+### Configuration
+
+#### View Configuration
+
+```bash
+# Show all config
+gboard config show
+
+# Show specific value
+gboard config get api.url
+```
+
+#### Set Configuration
+
+```bash
+gboard config set api.url "https://api.gboard.com/graphql"
+gboard config set output.format json
+gboard config set defaults.project_id "abc123"
+```
+
+#### Reset Configuration
+
+```bash
+gboard config reset
+```
+
+## Output Formats
+
+### Table (Default)
+
+```bash
+gboard project list
+
+╔════════╤══════════════╤═══════════════════╤═════════╗
+║ ID     │ Name         │ Description       │ Owner   ║
+╠════════╪══════════════╪═══════════════════╪═════════╣
+║ abc123 │ My Project   │ A cool project    │ john    ║
+║ def456 │ Work Stuff   │ Work tasks        │ jane    ║
+╚════════╧══════════════╧═══════════════════╧═════════╝
+```
+
+### JSON
+
+```bash
+gboard project list --output json
+
+[
+  {
+    "id": "abc123",
+    "name": "My Project",
+    "description": "A cool project",
+    "owner": {
+      "id": "user1",
+      "name": "john"
+    }
+  }
+]
+```
+
+### YAML
+
+```bash
+gboard project list --output yaml
+
+- id: abc123
+  name: My Project
+  description: A cool project
+  owner:
+    id: user1
+    name: john
+```
+
+## Flags
+
+### Global Flags
+
+Available for all commands:
+
+```bash
+--config string      Config file (default "$HOME/.gboard/config.yml")
+--output string      Output format: table, json, yaml (default "table")
+--no-color          Disable colored output
+--verbose           Verbose output
+--quiet             Quiet mode (errors only)
+```
+
+### Common Flags
+
+```bash
+--project string    Project ID (or use default from config)
+--format string     Output format
+--force            Skip confirmations
+```
+
+## Examples
+
+### Daily Workflow
+
+```bash
+# Login
+gboard auth login
+
+# View your projects
+gboard project list
+
+# Set default project
+gboard config set defaults.project_id "abc123"
+
+# View issues
+gboard issue list
+
+# Create new issue
+gboard issue create \
+  --title "Add dark mode" \
+  --description "Implement dark mode theme" \
+  --priority medium
+
+# Update issue status
+gboard issue move <issue-id> --column <in-progress-column-id>
+
+# Assign to yourself
+gboard issue assign <issue-id> --me
+```
+
+### Automation Scripts
+
+```bash
+#!/bin/bash
+# create-sprint.sh - Create a new sprint with standard columns
+
+PROJECT_ID="$1"
+SPRINT_NAME="$2"
+
+# Create board
+BOARD_ID=$(gboard board create \
+  --project "$PROJECT_ID" \
+  --name "$SPRINT_NAME" \
+  --output json | jq -r '.id')
+
+# Create columns
+gboard column create --board "$BOARD_ID" --name "To Do" --position 0
+gboard column create --board "$BOARD_ID" --name "In Progress" --position 1
+gboard column create --board "$BOARD_ID" --name "In Review" --position 2
+gboard column create --board "$BOARD_ID" --name "Done" --position 3
+
+echo "Sprint created: $BOARD_ID"
+```
+
+### Bulk Operations
+
+```bash
+# Export all issues to JSON
+gboard issue list --project <project-id> --output json > issues.json
+
+# Import from JSON (requires custom script)
+cat issues.json | jq -r '.[] | [.title, .description] | @tsv' | \
+  while IFS=$'\t' read -r title desc; do
+    gboard issue create --title "$title" --description "$desc"
+  done
+```
+
+## Shell Completion
+
+### Bash
+
+```bash
+# Add to ~/.bashrc
+source <(gboard completion bash)
+```
+
+### Zsh
+
+```bash
+# Add to ~/.zshrc
+source <(gboard completion zsh)
+```
+
+### Fish
+
+```bash
+# Add to ~/.config/fish/config.fish
+gboard completion fish | source
+```
+
+## Troubleshooting
+
+### Authentication Issues
+
+```bash
+# Check current user
+gboard auth whoami
+
+# If token expired, login again
+gboard auth login
+
+# Verify API URL
+gboard config get api.url
+```
+
+### Connection Issues
+
+```bash
+# Test API connection
+curl $(gboard config get api.url)
+
+# Verbose output for debugging
+gboard project list --verbose
+```
+
+### Reset Everything
+
+```bash
+# Logout
+gboard auth logout
+
+# Reset config
+gboard config reset
+
+# Re-initialize
+gboard config init
+gboard auth login
+```
+
+## Advanced Usage
+
+### Custom API Endpoints
+
+```bash
+# Use different environments
+gboard --config ~/.gboard/prod.yml project list
+gboard --config ~/.gboard/staging.yml project list
+```
+
+### Scripting
+
+```bash
+# Get specific field
+PROJECT_NAME=$(gboard project show <id> --output json | jq -r '.name')
+
+# Count issues
+ISSUE_COUNT=$(gboard issue list --output json | jq 'length')
+
+# Check if project exists
+if gboard project show <id> &>/dev/null; then
+  echo "Project exists"
+fi
+```
+
+## Next Steps
+
+- [Backend API Reference](/docs/api) - GraphQL API details
+- [Contributing](/docs/contributing) - Contribute to the CLI

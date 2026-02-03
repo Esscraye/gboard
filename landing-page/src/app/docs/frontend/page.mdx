@@ -1,0 +1,361 @@
+# Frontend Overview
+
+The GBoard frontend is a modern React application built with Next.js 16, TypeScript, and Tailwind CSS.
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Animations**: Framer Motion
+- **GraphQL**: Apollo Client
+- **Drag & Drop**: @dnd-kit
+- **Form Handling**: React Hook Form
+- **Testing**: Playwright
+
+## Project Structure
+
+```
+frontend/
+├── app/
+│   ├── (main)/               # Main app (authenticated)
+│   │   ├── dashboard/        # Dashboard page
+│   │   ├── projects/[id]/    # Project pages
+│   │   └── layout.tsx        # Main layout
+│   ├── login/                # Login page
+│   ├── signup/               # Signup page
+│   ├── globals.css           # Global styles
+│   └── layout.tsx            # Root layout
+├── components/
+│   ├── auth/                 # Auth components
+│   ├── board/                # Kanban board
+│   │   ├── Board.tsx
+│   │   ├── Column.tsx
+│   │   └── IssueCard.tsx
+│   ├── issues/               # Issue management
+│   ├── layout/               # Layout components
+│   ├── projects/             # Project components
+│   ├── providers/            # Context providers
+│   └── ui/                   # Reusable UI (shadcn)
+├── lib/
+│   ├── apollo-client.ts      # Apollo setup
+│   ├── utils.ts              # Utilities
+│   └── graphql/              # GraphQL operations
+│       ├── queries/
+│       └── mutations/
+├── public/                   # Static assets
+├── tests/                    # E2E tests
+│   ├── board.spec.ts
+│   ├── login.spec.ts
+│   └── projects.spec.ts
+├── types/
+│   └── index.ts              # TypeScript types
+├── next.config.ts            # Next.js config
+├── tailwind.config.ts        # Tailwind config
+├── playwright.config.ts      # Playwright config
+└── tsconfig.json             # TypeScript config
+```
+
+## Key Features
+
+### 1. App Router (Next.js 16)
+
+Uses the modern App Router with server and client components:
+
+```tsx
+// app/(main)/dashboard/page.tsx
+import { ProjectList } from '@/components/projects/ProjectList'
+
+export default function DashboardPage() {
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <ProjectList />
+    </div>
+  )
+}
+```
+
+### 2. Apollo Client Integration
+
+GraphQL queries and mutations with Apollo:
+
+```tsx
+'use client'
+
+import { useQuery } from '@apollo/client'
+import { GET_PROJECTS } from '@/lib/graphql/queries/projects'
+
+export function ProjectList() {
+  const { data, loading, error } = useQuery(GET_PROJECTS)
+  
+  if (loading) return <Skeleton />
+  if (error) return <ErrorMessage error={error} />
+  
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      {data.projects.map(project => (
+        <ProjectCard key={project.id} project={project} />
+      ))}
+    </div>
+  )
+}
+```
+
+### 3. Kanban Board with Drag & Drop
+
+Interactive board using @dnd-kit:
+
+```tsx
+'use client'
+
+import { DndContext, DragEndEvent } from '@dnd-kit/core'
+import { Column } from './Column'
+
+export function Board({ board }: { board: Board }) {
+  const handleDragEnd = (event: DragEndEvent) => {
+    // Update issue position
+  }
+  
+  return (
+    <DndContext onDragEnd={handleDragEnd}>
+      <div className="flex gap-4 overflow-x-auto">
+        {board.columns.map(column => (
+          <Column key={column.id} column={column} />
+        ))}
+      </div>
+    </DndContext>
+  )
+}
+```
+
+### 4. Authentication
+
+JWT-based authentication with context:
+
+```tsx
+// components/providers/AuthProvider.tsx
+'use client'
+
+import { createContext, useContext, useState, useEffect } from 'react'
+
+type AuthContextType = {
+  user: User | null
+  login: (email: string, password: string) => Promise<void>
+  logout: () => void
+  isAuthenticated: boolean
+}
+
+export const AuthContext = createContext<AuthContextType>(null!)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  
+  // Implementation...
+  
+  return (
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const useAuth = () => useContext(AuthContext)
+```
+
+### 5. shadcn/ui Components
+
+Reusable, accessible components:
+
+```tsx
+import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+
+export function CreateIssueDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button>Create Issue</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Issue</DialogTitle>
+        </DialogHeader>
+        <form>
+          <Input placeholder="Issue title" />
+          {/* More fields */}
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+```
+
+## Running the Frontend
+
+### Development
+
+```bash
+# Install dependencies
+bun install
+
+# Run dev server
+bun run dev
+
+# Open http://localhost:3000
+```
+
+### Production Build
+
+```bash
+# Build for production
+bun run build
+
+# Start production server
+bun run start
+```
+
+### Testing
+
+```bash
+# Run Playwright tests
+bun playwright test
+
+# Run in UI mode
+bun playwright test --ui
+
+# Run specific test
+bun playwright test board.spec.ts
+```
+
+## Environment Variables
+
+```env
+# API
+NEXT_PUBLIC_API_URL=http://localhost:8080/graphql
+
+# App
+NEXT_PUBLIC_APP_NAME=GBoard
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## Routing
+
+```
+/                     → Landing page redirect
+/login                → Login page
+/signup               → Signup page
+/dashboard            → User dashboard
+/projects             → Projects list
+/projects/[id]        → Project details
+/projects/[id]/board  → Kanban board
+```
+
+## State Management
+
+- **Server State**: Apollo Client cache
+- **UI State**: React hooks (useState, useReducer)
+- **Global State**: Context API
+- **Form State**: React Hook Form
+
+## Styling System
+
+### Tailwind CSS
+
+Utility-first CSS with custom configuration:
+
+```tsx
+<div className="flex items-center gap-4 p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+  <Avatar src={user.avatar} />
+  <div>
+    <h3 className="font-semibold text-gray-900">{user.name}</h3>
+    <p className="text-sm text-gray-600">{user.email}</p>
+  </div>
+</div>
+```
+
+### Dark Mode
+
+Automatic dark mode support:
+
+```tsx
+import { ThemeProvider } from 'next-themes'
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider attribute="class" defaultTheme="system">
+      {children}
+    </ThemeProvider>
+  )
+}
+```
+
+## Performance Optimizations
+
+1. **Server Components** - Reduce client bundle
+2. **Code Splitting** - Lazy loading with dynamic imports
+3. **Image Optimization** - Next.js Image component
+4. **Apollo Cache** - Minimize network requests
+5. **React Compiler** - Automatic optimizations
+
+## Best Practices
+
+### Component Structure
+
+```tsx
+// Good: Small, focused components
+export function IssueCard({ issue }: { issue: Issue }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{issue.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <IssuePriority priority={issue.priority} />
+        <IssueAssignee assignee={issue.assignee} />
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+### Type Safety
+
+```tsx
+// Define types for all props
+interface ProjectCardProps {
+  project: Project
+  onEdit?: (project: Project) => void
+  onDelete?: (id: string) => void
+}
+
+export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
+  // Component implementation
+}
+```
+
+### Error Handling
+
+```tsx
+import { useQuery } from '@apollo/client'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+
+export function DataComponent() {
+  const { data, error, loading } = useQuery(QUERY)
+  
+  if (loading) return <LoadingSpinner />
+  if (error) return <ErrorMessage error={error} />
+  
+  return <DataDisplay data={data} />
+}
+```
+
+## Next Steps
+
+- [Setup & Configuration](/docs/frontend/setup) - Detailed setup
+- [Components](/docs/frontend/components) - Component library
+- [State Management](/docs/frontend/state-management) - Data management
+- [Styling](/docs/frontend/styling) - Styling guide
+- [Testing](/docs/frontend/testing) - Testing strategies

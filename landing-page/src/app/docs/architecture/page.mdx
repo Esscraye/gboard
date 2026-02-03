@@ -1,0 +1,338 @@
+# Architecture
+
+GBoard follows a modern, microservices-inspired architecture with clear separation of concerns.
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Client Layer                         │
+├──────────────┬──────────────┬──────────────┬────────────────┤
+│   Browser    │   Mobile     │     CLI      │   Third-Party  │
+│   (Next.js)  │   (Future)   │   (Cobra)    │      Apps      │
+└──────┬───────┴──────┬───────┴──────┬───────┴────────┬───────┘
+       │              │              │                │
+       └──────────────┴──────────────┴────────────────┘
+                             │
+                    ┌────────▼─────────┐
+                    │   GraphQL API    │
+                    │   (Go + gqlgen)  │
+                    └────────┬─────────┘
+                             │
+       ┌─────────────────────┼─────────────────────┐
+       │                     │                     │
+┌──────▼───────┐     ┌──────▼──────┐      ┌──────▼──────┐
+│   Auth       │     │  Business   │      │   Data      │
+│   Service    │     │   Logic     │      │   Layer     │
+│   (JWT)      │     │  (Resolvers)│      │   (GORM)    │
+└──────────────┘     └─────────────┘      └──────┬──────┘
+                                                  │
+                                          ┌───────▼──────┐
+                                          │  PostgreSQL  │
+                                          │  or SQLite   │
+                                          └──────────────┘
+```
+
+## Components
+
+### Frontend (Next.js)
+
+The frontend is a modern single-page application built with Next.js 16 using the App Router.
+
+**Key Technologies:**
+- **Next.js** - React framework with server components
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Apollo Client** - GraphQL client
+- **Framer Motion** - Animations
+- **DND Kit** - Drag and drop
+
+**Directory Structure:**
+```
+frontend/
+├── app/              # Next.js App Router
+│   ├── (main)/       # Main app layout
+│   ├── login/        # Auth pages
+│   └── layout.tsx    # Root layout
+├── components/       # React components
+│   ├── board/        # Board-specific
+│   ├── issues/       # Issue components
+│   ├── projects/     # Project components
+│   └── ui/           # Reusable UI
+└── lib/              # Utilities
+    ├── apollo-client.ts
+    └── graphql/      # GraphQL queries
+```
+
+### Backend (Go)
+
+The backend is a high-performance Go server exposing a GraphQL API.
+
+**Key Technologies:**
+- **Go** - Programming language
+- **gqlgen** - GraphQL server
+- **Gin** - HTTP framework
+- **GORM** - ORM
+- **JWT-Go** - Authentication
+
+**Directory Structure:**
+```
+backend/
+├── cmd/
+│   └── main.go       # Entry point
+├── graph/            # GraphQL layer
+│   ├── schema.graphqls
+│   ├── resolver.go
+│   └── schema.resolvers.go
+├── internal/         # Internal packages
+│   ├── models/       # Domain models
+│   ├── repositories/ # Data access
+│   └── services/     # Business logic
+├── pkg/              # Public packages
+│   ├── auth/         # Authentication
+│   └── database/     # DB connection
+└── tests/            # Tests
+```
+
+### CLI (Cobra)
+
+A command-line interface for power users and automation.
+
+**Key Technologies:**
+- **Cobra** - CLI framework
+- **Viper** - Configuration
+- **Go** - Implementation
+
+## Data Flow
+
+### Creating an Issue
+
+```
+1. User creates issue in UI
+   ↓
+2. Frontend sends GraphQL mutation
+   mutation CreateIssue($input: CreateIssueInput!) {
+     createIssue(input: $input) {
+       id
+       title
+       description
+     }
+   }
+   ↓
+3. Backend validates JWT token
+   ↓
+4. GraphQL resolver processes request
+   ↓
+5. Service layer applies business logic
+   ↓
+6. Repository saves to database
+   ↓
+7. Response flows back to frontend
+   ↓
+8. UI updates with new issue
+```
+
+### Real-time Updates (Future)
+
+GraphQL subscriptions will enable real-time collaboration:
+
+```
+subscription OnIssueUpdate($projectId: ID!) {
+  issueUpdated(projectId: $projectId) {
+    id
+    title
+    status
+    assignee {
+      id
+      name
+    }
+  }
+}
+```
+
+## Security Architecture
+
+### Authentication Flow
+
+```
+1. User submits credentials
+   ↓
+2. Backend validates credentials
+   ↓
+3. Generate JWT token
+   {
+     "user_id": "123",
+     "email": "user@example.com",
+     "exp": 1234567890
+   }
+   ↓
+4. Return token to client
+   ↓
+5. Client stores in localStorage
+   ↓
+6. Include in Authorization header
+   Authorization: Bearer <token>
+   ↓
+7. Backend validates on each request
+```
+
+### Authorization
+
+Role-based access control (RBAC) ensures users can only access authorized resources:
+
+- **Admin** - Full system access
+- **Project Owner** - Full project access
+- **Member** - Limited project access
+- **Viewer** - Read-only access
+
+## Database Schema
+
+### Core Entities
+
+```sql
+users
+- id (PK)
+- email (unique)
+- password_hash
+- name
+- created_at
+- updated_at
+
+projects
+- id (PK)
+- name
+- description
+- owner_id (FK -> users)
+- created_at
+- updated_at
+
+boards
+- id (PK)
+- project_id (FK -> projects)
+- name
+- created_at
+- updated_at
+
+columns
+- id (PK)
+- board_id (FK -> boards)
+- name
+- position
+- created_at
+- updated_at
+
+issues
+- id (PK)
+- project_id (FK -> projects)
+- column_id (FK -> columns)
+- title
+- description
+- status
+- priority
+- assignee_id (FK -> users)
+- created_at
+- updated_at
+
+project_members
+- project_id (FK -> projects)
+- user_id (FK -> users)
+- role
+```
+
+## API Design
+
+### GraphQL Schema Structure
+
+```graphql
+type Query {
+  # User queries
+  me: User
+  user(id: ID!): User
+  
+  # Project queries
+  projects: [Project!]!
+  project(id: ID!): Project
+  
+  # Issue queries
+  issues(projectId: ID!): [Issue!]!
+  issue(id: ID!): Issue
+}
+
+type Mutation {
+  # Auth mutations
+  signup(input: SignupInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  
+  # Project mutations
+  createProject(input: CreateProjectInput!): Project!
+  updateProject(id: ID!, input: UpdateProjectInput!): Project!
+  deleteProject(id: ID!): Boolean!
+  
+  # Issue mutations
+  createIssue(input: CreateIssueInput!): Issue!
+  updateIssue(id: ID!, input: UpdateIssueInput!): Issue!
+  moveIssue(id: ID!, columnId: ID!, position: Int!): Issue!
+  deleteIssue(id: ID!): Boolean!
+}
+```
+
+## Performance Considerations
+
+### Backend Optimizations
+
+- **Database Indexing** - Optimized queries
+- **Connection Pooling** - Efficient DB connections
+- **Goroutines** - Concurrent request handling
+- **Caching** - Redis for session data (future)
+
+### Frontend Optimizations
+
+- **Code Splitting** - Lazy loading
+- **Image Optimization** - Next.js Image component
+- **Prefetching** - Apollo Client cache
+- **Server Components** - Reduced client bundle
+
+## Scalability
+
+### Horizontal Scaling
+
+The stateless backend design allows easy horizontal scaling:
+
+```
+Load Balancer
+    │
+    ├── Backend Instance 1
+    ├── Backend Instance 2
+    └── Backend Instance 3
+         │
+    Database Cluster
+```
+
+### Database Scaling
+
+- **Read Replicas** - Scale read operations
+- **Partitioning** - Split data by project
+- **Caching** - Redis for frequently accessed data
+
+## Monitoring & Observability
+
+### Logging
+
+- **Structured Logging** - JSON format
+- **Log Levels** - Debug, Info, Warn, Error
+- **Correlation IDs** - Trace requests
+
+### Metrics
+
+- **Request Latency** - Track API performance
+- **Error Rates** - Monitor failures
+- **Resource Usage** - CPU, Memory, DB connections
+
+## Future Enhancements
+
+- **WebSocket Support** - Real-time collaboration
+- **File Attachments** - Issue attachments
+- **Email Notifications** - Activity alerts
+- **Mobile Apps** - React Native
+- **Advanced Search** - Elasticsearch integration
+- **Analytics Dashboard** - Usage metrics

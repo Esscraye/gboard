@@ -1,0 +1,230 @@
+# Getting Started
+
+This guide will help you set up GBoard on your local machine in just a few minutes.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+- **Docker** and **Docker Compose** (recommended)
+- **Go** 1.21+ (if running without Docker)
+- **Bun** or **Node.js** 18+ (if running frontend without Docker)
+- **PostgreSQL** or **SQLite** (for database)
+
+## Quick Start with Docker
+
+The fastest way to get GBoard running is with Docker Compose:
+
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/gboard.git
+cd gboard
+
+# Start all services
+docker-compose up -d
+
+# The application will be available at:
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8080
+# Landing Page: http://localhost:3001
+```
+
+That's it! 🎉 You now have GBoard running locally.
+
+## Manual Setup
+
+If you prefer to run services individually:
+
+### 1. Backend Setup
+
+```bash
+cd backend
+
+# Install dependencies
+go mod download
+
+# Set up environment variables
+cp .env.example .env
+
+# Edit .env with your database credentials
+# DATABASE_URL=postgresql://user:password@localhost:5432/gboard
+# JWT_SECRET=your-secret-key
+
+# Run database migrations
+go run cmd/main.go migrate
+
+# Start the server
+go run cmd/main.go
+```
+
+The GraphQL API will be available at `http://localhost:8080`.
+
+### 2. Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+bun install
+
+# Set up environment variables
+cp .env.example .env
+
+# Edit .env with your backend URL
+# NEXT_PUBLIC_API_URL=http://localhost:8080/graphql
+
+# Start the development server
+bun run dev
+```
+
+The frontend will be available at `http://localhost:3000`.
+
+### 3. CLI Setup (Optional)
+
+```bash
+cd cli
+
+# Build the CLI
+go build -o gboard
+
+# Install globally (optional)
+sudo mv gboard /usr/local/bin/
+
+# Configure
+cp config.yml.example config.yml
+# Edit config.yml with your API credentials
+```
+
+## Database Configuration
+
+### PostgreSQL (Recommended for Production)
+
+```env
+DATABASE_URL=postgresql://username:password@localhost:5432/gboard?sslmode=disable
+```
+
+### SQLite (Great for Development)
+
+```env
+DATABASE_URL=sqlite:gboard.db
+```
+
+## Environment Variables
+
+### Backend (.env)
+
+```env
+# Server
+PORT=8080
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/gboard
+
+# JWT Authentication
+JWT_SECRET=your-super-secret-key-change-this
+JWT_EXPIRATION=24h
+
+# CORS
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+```
+
+### Frontend (.env.local)
+
+```env
+# API
+NEXT_PUBLIC_API_URL=http://localhost:8080/graphql
+
+# App
+NEXT_PUBLIC_APP_NAME=GBoard
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## First Steps
+
+### 1. Create an Account
+
+Visit `http://localhost:3000/signup` and create your first user account.
+
+### 2. Create a Project
+
+After logging in, click on "New Project" to create your first project.
+
+### 3. Set Up Your Board
+
+Add columns to your Kanban board (e.g., "To Do", "In Progress", "Done").
+
+### 4. Create Issues
+
+Start adding issues to your board and drag them between columns!
+
+## Development Workflow
+
+### Hot Reloading
+
+All services support hot reloading in development mode:
+
+- **Backend**: Automatic restart on file changes (when using Docker or air)
+- **Frontend**: Fast Refresh with Next.js
+- **Landing Page**: Fast Refresh with Next.js
+
+### Running Tests
+
+```bash
+# Backend tests
+cd backend
+go test ./...
+
+# Frontend tests
+cd frontend
+bun test
+
+# E2E tests
+cd frontend
+bun playwright test
+```
+
+## Troubleshooting
+
+### Port Already in Use
+
+If you see port conflicts:
+
+```bash
+# Stop all containers
+docker-compose down
+
+# Or change ports in docker-compose.yml
+```
+
+### Database Connection Error
+
+Ensure PostgreSQL is running:
+
+```bash
+# Check PostgreSQL status
+docker-compose ps postgres
+
+# View logs
+docker-compose logs postgres
+```
+
+### GraphQL Playground Not Loading
+
+Clear your browser cache and ensure the backend is running:
+
+```bash
+curl http://localhost:8080/health
+```
+
+## Next Steps
+
+- [Architecture Overview](/docs/architecture) - Understand how GBoard works
+- [Backend Guide](/docs/backend) - Deep dive into the backend
+- [Frontend Guide](/docs/frontend) - Learn about the frontend
+- [API Reference](/docs/api) - Explore the GraphQL API
+
+## Need Help?
+
+- Check our [GitHub Issues](https://github.com/your-repo/gboard/issues)
+- Join our [Discussions](https://github.com/your-repo/gboard/discussions)
+- Read the [Contributing Guide](/docs/contributing)

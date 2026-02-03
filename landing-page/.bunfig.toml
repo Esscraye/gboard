@@ -1,0 +1,20 @@
+[install]
+# Use the global cache for faster installs
+global_cache = true
+
+# Save space by not installing optional dependencies
+optional = false
+
+[test]
+# Configure test runner if needed in the future
+preload = ["./test-setup.ts"]
+
+[run]
+# Environment variables for all bun run commands
+env = [
+  "NODE_ENV=development",
+  "NEXT_PUBLIC_APP_URL=http://localhost:3000"
+]
+
+# Increase memory limit for Next.js builds
+memory_limit = "4gb"

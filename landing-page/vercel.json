@@ -1,0 +1,32 @@
+{
+	"version": 2,
+	"builds": [
+		{
+			"src": "package.json",
+			"use": "@vercel/next"
+		}
+	],
+	"routes": [
+		{
+			"src": "/(.*)",
+			"dest": "/"
+		},
+		{
+			"src": "/docs/(.*)",
+			"dest": "/docs/$1"
+		}
+	],
+	"env": {
+		"NEXT_PUBLIC_APP_URL": "https://gboard-landing.vercel.app"
+	},
+	"rewrites": [
+		{
+			"source": "/docs",
+			"destination": "/docs"
+		},
+		{
+			"source": "/docs/(.*)",
+			"destination": "/docs/$1"
+		}
+	]
+}
